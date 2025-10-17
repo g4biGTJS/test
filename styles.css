@@ -372,6 +372,7 @@ body {
     position: relative;
     z-index: 2;
     min-height: 100vh;
+    padding-top: 80px;
 }
 
 .page.active {
@@ -1240,3 +1241,4 @@ body {
         font-size: 0.9rem;
     }
 }
+
