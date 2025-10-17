@@ -34,12 +34,6 @@
 
   <div class="page active">
     <div class="container offsets-container">
-      <p>
-    </p>
-            <p>
-    </p>
-            <p>
-    </p>
       <h1 class="title">Offsets</h1>
       <p class="subtitle">Current Roblox offsets and version information</p>
 
@@ -91,9 +85,14 @@
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return url.includes('clientsettings')
-          ? (await res.json()).version || null
-          : (await res.text()).trim();
+
+        if (url.includes('clientsettings')) {
+          const data = await res.json();
+          // Prefer clientVersionUpload; fallback to version
+          return data.clientVersionUpload || data.version || null;
+        } else {
+          return (await res.text()).trim();
+        }
       } catch {
         return null;
       }
@@ -193,5 +192,3 @@
   </script>
 </body>
 </html>
-
-
