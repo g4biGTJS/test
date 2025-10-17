@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offsets - Glacier</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="navbar">
+        <div class="nav-logo">
+            <span>Glacier</span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="download.html" class="nav-link">Download</a>
+            <a href="offsets.html" class="nav-link active">Offsets</a>
+            <a href="team.html" class="nav-link">Team</a>
+        </div>
+    </nav>
+
+    <div class="dark-overlay"></div>
+    
+    <div class="pumpkin">🎃</div>
+    <div class="pumpkin">🎃</div>
+    <div class="pumpkin">🎃</div>
+
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="page active">
+        <div class="container offsets-container">
+            <h1 class="title">Offsets</h1>
+            <p class="subtitle">Current Roblox offsets and version information</p>
+
+            <div class="main-content">
+                <div class="version-display">
+                    <h2 class="changelog-title">Current Roblox Version</h2>
+                    <div class="version-box" id="versionBox">
+                        <div class="version-status" id="versionStatus">Loading...</div>
+                        <div class="version-text" id="versionText">...</div>
+                    </div>
+                    <p class="last-checked">Last checked: <span id="lastChecked">Never</span></p>
+                </div>
+
+                <div class="offsets-section">
+                    <h2 class="changelog-title">Windows Offsets</h2>
+                    <div class="offsets-box" id="offsetsBox">
+                        <pre id="offsetsContent">Loading offsets...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification">
+        <div class="notification-title">All Systems Operational</div>
+        <div class="notification-text">Everything running smoothly!</div>
+    </div>
+
+    <script>
+        const ROBLOX_VERSION_KEY = 'roblox_current_version';
+        const UPDATE_TIMESTAMP_KEY = 'roblox_update_timestamp';
+        const FLASH_DURATION_MS = 3600000; // 1 hour
+        const VERSION_PROXY_PATH = '/api/version'; 
+
+        function setStatus(status, version, versionBox, versionStatus, versionText) {
+            versionText.textContent = version;
+
+            if (status === 'updated') {
+                versionBox.className = 'version-box updated';
+                versionStatus.textContent = 'Recently Updated';
+            } else if (status === 'current') {
+                versionBox.className = 'version-box current';
+                versionStatus.textContent = 'Current Version';
+            } else if (status === 'error') {
+                versionBox.className = 'version-box error';
+                versionStatus.textContent = 'Error';
+                versionText.textContent = 'Failed to load';
+            }
+        }
+
+        async function fetchRobloxVersion() {
+            const versionBox = document.getElementById('versionBox');
+            const versionText = document.getElementById('versionText');
+            const versionStatus = document.getElementById('versionStatus');
+            const lastChecked = document.getElementById('lastChecked');
+
+            lastChecked.textContent = new Date().toLocaleString();
+
+            try {
+                const apiUrl = VERSION_PROXY_PATH; 
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`Proxy error or upstream API error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const currentVersion = data.clientVersionUpload?.trim();
+
+                if (!currentVersion) {
+                    throw new Error('clientVersionUpload field missing or invalid in API response.');
+                }
+
+                const storedVersion = localStorage.getItem(ROBLOX_VERSION_KEY);
+                let updateTimestamp = parseInt(localStorage.getItem(UPDATE_TIMESTAMP_KEY)) || 0;
+
+                let status = 'current';
+                const timeSinceUpdate = Date.now() - updateTimestamp;
+
+                if (storedVersion && currentVersion !== storedVersion) {
+                    console.log(`New version detected: ${currentVersion}. Old: ${storedVersion}`);
+                    localStorage.setItem(ROBLOX_VERSION_KEY, currentVersion);
+                    updateTimestamp = Date.now();
+                    localStorage.setItem(UPDATE_TIMESTAMP_KEY, updateTimestamp);
+                    status = 'updated';
+                } else if (timeSinceUpdate < FLASH_DURATION_MS && updateTimestamp > 0) {
+                    status = 'updated';
+                } else {
+                    status = 'current';
+                }
+
+                setStatus(status, currentVersion, versionBox, versionStatus, versionText);
+
+                if (status === 'updated') {
+                    const remainingTime = FLASH_DURATION_MS - timeSinceUpdate;
+                    if (remainingTime > 0) {
+                        setTimeout(() => {
+                            setStatus('current', currentVersion, versionBox, versionStatus, versionText);
+                        }, remainingTime);
+                    } else {
+                        setStatus('current', currentVersion, versionBox, versionStatus, versionText);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error fetching Roblox version:', error);
+                setStatus('error', 'Failed to load', versionBox, versionStatus, versionText);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function highlightCppSyntax(text) {
+            let result = escapeHtml(text);
+
+            result = result.replace(/\b(0x[0-9A-Fa-f]+)\b/g, '<span class="syntax-hex">$1</span>');
+            result = result.replace(/\b(namespace|inline|constexpr)\b/g, '<span class="syntax-keyword">$1</span>');
+            result = result.replace(/\b(uintptr_t)\b/g, '<span class="syntax-type">$1</span>');
+            result = result.replace(/\b([A-Z][a-zA-Z0-9_]*)\b(\s*=)/g, '<span class="syntax-identifier">$1</span>$2');
+            result = result.replace(/([{}])/g, '<span class="syntax-brace">$1</span>');
+
+            return result;
+        }
+
+        async function loadOffsets() {
+            try {
+                const response = await fetch('./offsets/windows-offsets.txt?t=' + Date.now()); 
+                const text = await response.text();
+
+                const highlightedText = highlightCppSyntax(text);
+                document.getElementById('offsetsContent').innerHTML = highlightedText;
+            } catch (error) {
+                console.error('Error loading offsets:', error);
+                document.getElementById('offsetsContent').textContent = 'Error loading offsets. Please ensure the file exists at the path "offsets/windows-offsets.txt".';
+            }
+        }
+
+        // Clear any stuck "updated" status on page load
+        window.addEventListener('load', function() {
+            const updateTimestamp = parseInt(localStorage.getItem(UPDATE_TIMESTAMP_KEY)) || 0;
+            const timeSinceUpdate = Date.now() - updateTimestamp;
+            
+            if (timeSinceUpdate >= FLASH_DURATION_MS && updateTimestamp > 0) {
+                const versionBox = document.getElementById('versionBox');
+                const versionStatus = document.getElementById('versionStatus');
+                const versionText = document.getElementById('versionText');
+                const currentVersion = localStorage.getItem(ROBLOX_VERSION_KEY) || 'Unknown';
+                
+                setStatus('current', currentVersion, versionBox, versionStatus, versionText);
+            }
+            
+            // Hide loading screen with fade animation
+            const loading = document.querySelector('.loading');
+            loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+            
+            setTimeout(function() {
+                loading.style.display = 'none';
+            }, 1500);
+        });
+
+        loadOffsets();
+        fetchRobloxVersion();
+        setInterval(fetchRobloxVersion, 5000);
+        setInterval(loadOffsets, 5000);
+    </script>
+</body>
+</html>
