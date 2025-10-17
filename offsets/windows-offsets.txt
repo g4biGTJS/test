@@ -1,5 +1,5 @@
 // Roblox Version: version-d34359a5577645e2
-// Byfron Version: ???
+
 namespace offsets {
     inline constexpr uintptr_t Adornee = 0xD0;
     inline constexpr uintptr_t Anchored = 0x275;
@@ -164,4 +164,4 @@ namespace offsets {
     inline constexpr uintptr_t WorkspaceToWorld = 0x3D0;
     inline constexpr uintptr_t viewmatrix = 0x4B0;
 }
-Explain
+
