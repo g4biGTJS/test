@@ -74,7 +74,9 @@
     const UPDATE_TRACKER_PATH = 'offsets/last-update.json';
 
     const VERSION_APIS = [
-          'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer'
+      'https://clientsettings.roblox.com/v2/client-version/WindowsPlayer',
+      'https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
+      'https://setup.rbxcdn.com/version'
     ];
 
     function setStatus(status, version, box, statusEl, textEl) {
@@ -90,9 +92,12 @@
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return url.includes('clientsettings')
-          ? (await res.json()).version || null
-          : (await res.text()).trim();
+        if (url.includes('clientsettings')) {
+          const data = await res.json();
+          // Use clientVersionUpload instead of version
+          return data.clientVersionUpload || data.version || null;
+        }
+        return (await res.text()).trim();
       } catch {
         return null;
       }
@@ -193,4 +198,3 @@
   </script>
 </body>
 </html>
-
