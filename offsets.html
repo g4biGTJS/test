@@ -34,6 +34,12 @@
 
   <div class="page active">
     <div class="container offsets-container">
+      <p>
+    </p>
+            <p>
+    </p>
+            <p>
+    </p>
       <h1 class="title">Offsets</h1>
       <p class="subtitle">Current Roblox offsets and version information</p>
 
@@ -63,13 +69,14 @@
   </div>
 
   <script>
-    const ROBLOX_VERSION_KEY = 'roblox_current_version';
-    const UPDATE_TIMESTAMP_KEY = 'roblox_update_timestamp';
     const FLASH_DURATION_MS = 3600000; // 1 hour
     const OFFSETS_PATH = 'offsets/windows-offsets.txt';
+    const UPDATE_TRACKER_PATH = 'offsets/last-update.json';
 
     const VERSION_APIS = [
-      'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer'
+      'https://clientsettings.roblox.com/v2/client-version/WindowsPlayer',
+      'https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
+      'https://setup.rbxcdn.com/version'
     ];
 
     function setStatus(status, version, box, statusEl, textEl) {
@@ -85,14 +92,9 @@
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        if (url.includes('clientsettings')) {
-          const data = await res.json();
-          // Prefer clientVersionUpload; fallback to version
-          return data.clientVersionUpload || data.version || null;
-        } else {
-          return (await res.text()).trim();
-        }
+        return url.includes('clientsettings')
+          ? (await res.json()).version || null
+          : (await res.text()).trim();
       } catch {
         return null;
       }
@@ -113,32 +115,39 @@
         }
         if (!currentVersion) throw new Error('APIs failed');
 
-        const stored = localStorage.getItem(ROBLOX_VERSION_KEY);
-        let updatedAt = parseInt(localStorage.getItem(UPDATE_TIMESTAMP_KEY)) || 0;
-        let status = 'current';
-        const elapsed = Date.now() - updatedAt;
+        // Fetch global update tracker
+        let globalUpdateTime = 0;
+        let globalVersion = null;
+        try {
+          const trackerRes = await fetch(UPDATE_TRACKER_PATH + '?t=' + Date.now());
+          if (trackerRes.ok) {
+            const trackerData = await trackerRes.json();
+            globalUpdateTime = trackerData.timestamp || 0;
+            globalVersion = trackerData.version || null;
+          }
+        } catch (e) {
+          console.warn('Could not fetch global update tracker:', e);
+        }
 
-        if (stored && currentVersion !== stored) {
-          localStorage.setItem(ROBLOX_VERSION_KEY, currentVersion);
-          localStorage.setItem(UPDATE_TIMESTAMP_KEY, Date.now());
-          status = 'updated';
-        } else if (elapsed < FLASH_DURATION_MS && updatedAt > 0) {
-          status = 'updated';
-        } else if (!stored) {
-          localStorage.setItem(ROBLOX_VERSION_KEY, currentVersion);
-          localStorage.setItem(UPDATE_TIMESTAMP_KEY, Date.now());
+        let status = 'current';
+        const elapsed = Date.now() - globalUpdateTime;
+
+        // If global tracker shows recent update (within 1 hour), show "Recently Updated"
+        if (elapsed < FLASH_DURATION_MS && globalUpdateTime > 0) {
           status = 'updated';
         }
 
         setStatus(status, currentVersion, box, statusEl, textEl);
+        
+        // Auto-transition to current after remaining time
         if (status === 'updated') {
-          setTimeout(() => setStatus('current', currentVersion, box, statusEl, textEl), FLASH_DURATION_MS);
+          const remainingTime = FLASH_DURATION_MS - elapsed;
+          if (remainingTime > 0) {
+            setTimeout(() => setStatus('current', currentVersion, box, statusEl, textEl), remainingTime);
+          }
         }
       } catch (e) {
-        const cached = localStorage.getItem(ROBLOX_VERSION_KEY);
-        if (cached)
-          setStatus('current', cached + ' (cached)', box, statusEl, textEl);
-        else setStatus('error', 'Failed to load', box, statusEl, textEl);
+        setStatus('error', 'Failed to load', box, statusEl, textEl);
       }
     }
 
@@ -172,12 +181,6 @@
     }
 
     window.addEventListener('load', () => {
-      const box = document.getElementById('versionBox');
-      const statusEl = document.getElementById('versionStatus');
-      const textEl = document.getElementById('versionText');
-      const current = localStorage.getItem(ROBLOX_VERSION_KEY) || 'Unknown';
-      setStatus('current', current, box, statusEl, textEl);
-
       const loading = document.querySelector('.loading');
       loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
       setTimeout(() => (loading.style.display = 'none'), 1500);
