@@ -22,6 +22,7 @@
   </nav>
 
   <div class="dark-overlay"></div>
+  
   <div class="pumpkin">🎃</div>
   <div class="pumpkin">🎃</div>
   <div class="pumpkin">🎃</div>
@@ -34,14 +35,17 @@
 
   <div class="page active">
     <div class="container offsets-container">
-      <p>
-    </p>
-            <p>
-    </p>
-            <p>
-    </p>
+      <p></p>
+      <p></p>
+      <p></p>
       <h1 class="title">Offsets</h1>
       <p class="subtitle">Current Roblox offsets and version information</p>
+
+      <!-- Platform Toggle -->
+      <div class="platform-toggle">
+        <button class="platform-btn active" data-platform="windows">Windows</button>
+        <button class="platform-btn" data-platform="mac">Mac</button>
+      </div>
 
       <div class="main-content">
         <div class="version-display">
@@ -54,7 +58,7 @@
         </div>
 
         <div class="offsets-section">
-          <h2 class="changelog-title">Windows Offsets</h2>
+          <h2 class="changelog-title" id="offsetsTitle">Windows Offsets</h2>
           <div class="offsets-box" id="offsetsBox">
             <pre id="offsetsContent">Loading offsets...</pre>
           </div>
@@ -70,20 +74,29 @@
 
   <script>
     const FLASH_DURATION_MS = 3600000; // 1 hour
-    const OFFSETS_PATH = 'offsets/windows-offsets.txt';
-    const UPDATE_TRACKER_PATH = 'offsets/last-update.json';
+    
+    const PLATFORMS = {
+      windows: {
+        offsetsPath: 'offsets/windows-offsets.txt',
+        updateTrackerPath: 'offsets/last-update.json',
+        versionAPI: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
+        title: 'Windows Offsets'
+      },
+      mac: {
+        offsetsPath: 'offsets/mac-offsets.txt',
+        updateTrackerPath: 'offsets/last-update-mac.json',
+        versionAPI: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer',
+        title: 'Mac Offsets'
+      }
+    };
 
-    const VERSION_APIS = [
-      'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer'
-    ];
+    let currentPlatform = 'windows';
 
     function setStatus(status, version, box, statusEl, textEl) {
       textEl.textContent = version;
       box.className = `version-box ${status}`;
-      statusEl.textContent =
-        status === 'updated' ? 'Recently Updated' :
-        status === 'current' ? 'Current Version' :
-        'Error';
+      statusEl.textContent = status === 'updated' ? 'Recently Updated' : 
+                             status === 'current' ? 'Current Version' : 'Error';
     }
 
     async function tryFetchVersion(url) {
@@ -92,7 +105,6 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         if (url.includes('clientsettings')) {
           const data = await res.json();
-          // Use clientVersionUpload instead of version
           return data.clientVersionUpload || data.version || null;
         }
         return (await res.text()).trim();
@@ -106,21 +118,20 @@
       const statusEl = document.getElementById('versionStatus');
       const textEl = document.getElementById('versionText');
       const lastChecked = document.getElementById('lastChecked');
+      
       lastChecked.textContent = new Date().toLocaleString();
 
       try {
-        let currentVersion = null;
-        for (const api of VERSION_APIS) {
-          currentVersion = await tryFetchVersion(api);
-          if (currentVersion) break;
-        }
-        if (!currentVersion) throw new Error('APIs failed');
+        const platform = PLATFORMS[currentPlatform];
+        let currentVersion = await tryFetchVersion(platform.versionAPI);
+        
+        if (!currentVersion) throw new Error('API failed');
 
         // Fetch global update tracker
         let globalUpdateTime = 0;
         let globalVersion = null;
         try {
-          const trackerRes = await fetch(UPDATE_TRACKER_PATH + '?t=' + Date.now());
+          const trackerRes = await fetch(platform.updateTrackerPath + '?t=' + Date.now());
           if (trackerRes.ok) {
             const trackerData = await trackerRes.json();
             globalUpdateTime = trackerData.timestamp || 0;
@@ -139,7 +150,7 @@
         }
 
         setStatus(status, currentVersion, box, statusEl, textEl);
-        
+
         // Auto-transition to current after remaining time
         if (status === 'updated') {
           const remainingTime = FLASH_DURATION_MS - elapsed;
@@ -163,23 +174,53 @@
       res = res.replace(/\b(0x[0-9A-Fa-f]+)\b/g, '<span class="syntax-hex">$1</span>');
       res = res.replace(/\b(namespace|inline|constexpr)\b/g, '<span class="syntax-keyword">$1</span>');
       res = res.replace(/\b(uintptr_t)\b/g, '<span class="syntax-type">$1</span>');
-      res = res.replace(/\b([A-Z][a-zA-Z0-9_]*)\b(\s*=)/g, '<span class="syntax-identifier">$1</span>$2>');
+      res = res.replace(/\b([A-Z][a-zA-Z0-9_]*)\b(\s*=)/g, '<span class="syntax-identifier">$1</span>$2');
       res = res.replace(/([{}])/g, '<span class="syntax-brace">$1</span>');
       return res;
     }
 
     async function loadOffsets() {
+      const platform = PLATFORMS[currentPlatform];
       try {
-        const res = await fetch(OFFSETS_PATH + '?t=' + Date.now());
+        const res = await fetch(platform.offsetsPath + '?t=' + Date.now());
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const txt = await res.text();
         if (!txt.trim()) throw new Error('Empty file');
         document.getElementById('offsetsContent').innerHTML = highlightCppSyntax(txt);
       } catch (e) {
-        document.getElementById('offsetsContent').innerHTML =
-          `<span style="color:#ff6b6b;">Error loading offsets: ${e.message}<br>File missing: ${OFFSETS_PATH}</span>`;
+        document.getElementById('offsetsContent').innerHTML = 
+          `<span style="color:#ff6b6b;">Error loading offsets: ${e.message}<br>File missing: ${platform.offsetsPath}</span>`;
       }
     }
+
+    function switchPlatform(platform) {
+      if (platform === currentPlatform) return;
+      
+      currentPlatform = platform;
+      
+      // Update button states
+      document.querySelectorAll('.platform-btn').forEach(btn => {
+        if (btn.dataset.platform === platform) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      // Update title
+      document.getElementById('offsetsTitle').textContent = PLATFORMS[platform].title;
+      
+      // Reload data
+      loadOffsets();
+      fetchRobloxVersion();
+    }
+
+    // Event listeners for platform buttons
+    document.querySelectorAll('.platform-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchPlatform(btn.dataset.platform);
+      });
+    });
 
     window.addEventListener('load', () => {
       const loading = document.querySelector('.loading');
@@ -196,4 +237,3 @@
   </script>
 </body>
 </html>
-
