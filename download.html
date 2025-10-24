@@ -7,11 +7,16 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="maintenance-overlay" id="maintenanceOverlay">
+        <h1 class="maintenance-text">Site Under Maintenance</h1>
+        <p class="maintenance-subtitle">We're updating things! Please check back later.</p>
+        <a href="javascript:void(0)" onclick="location.reload()" class="maintenance-button">Refresh Site</a>
+    </div>
+
     <div class="loading">
         <div class="spinner"></div>
     </div>
 
-    <!-- Navigation Tabs -->
     <nav class="navbar">
         <div class="nav-logo">
             <span>Glacier</span>
@@ -89,52 +94,31 @@
                                 </div>
                                 <div class="item-stats">
                                     <div class="stat-item">
-                                        <span class="stat-label">Compatibility</span>
-                                        <span class="stat-value">30%</span>
-                                    </div>
-                                    <div class="stat-divider"></div>
-                                    <div class="stat-item">
-                                        <span class="stat-label">Status</span>
-                                        <span class="stat-value">Free</span>
-                                    </div>
-                                </div>
-                            </a>
-                            <a href="#" class="dropdown-item disabled" data-version="glcr-1.0.0b">
-                                <div class="item-header">
-                                    <div class="item-left">
-                                        <span class="item-name">Glacier ServerSide</span>
-                                        <span class="item-version">v1.0.0b</span>
-                                    </div>
-                                    <span class="badge coming-soon">Coming Soon</span>
-                                </div>
-                                <div class="item-stats">
-                                    <div class="stat-item">
                                         <span class="stat-label">UNC</span>
-                                        <span class="stat-value">???</span>
+                                        <span class="stat-value">44</span>
                                     </div>
                                     <div class="stat-divider"></div>
                                     <div class="stat-item">
                                         <span class="stat-label">sUNC</span>
-                                        <span class="stat-value">???</span>
+                                        <span class="stat-value">27</span>
                                     </div>
+                                </div>
+                            </a>
+                            <a href="#" class="dropdown-item disabled">
+                                <div class="item-header">
+                                    <div class="item-left">
+                                        <span class="item-name">Glacier Loader</span>
+                                        <span class="item-version">v2.0.0</span>
+                                    </div>
+                                    <span class="badge coming-soon-badge">Coming Soon</span>
                                 </div>
                             </a>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="changelog-section">
-                <h2 class="changelog-title">🎃 Recent Changes</h2>
-                <div id="changelogContainer">
-                    <div class="changelog-item">
-                        <div class="changelog-version">Executor - Version 1.2.11b</div>
-                        <div class="changelog-content">
-                            <p>• Improved performance and stability</p>
-                            <p>• Added new features and enhancements</p>
-                            <p>• Fixed various bugs and issues</p>
-                        </div>
-                    </div>
+                <div class="button-container">
+                    <a href="https://discord.gg/glacierstudios" class="glossy-button discord" target="_blank">Discord</a>
                 </div>
             </div>
         </div>
@@ -146,39 +130,80 @@
     </div>
 
     <script>
-        // Dropdown toggle functionality
-        const dropdownBtn = document.getElementById('downloadBtn');
-        const dropdown = document.querySelector('.dropdown');
+        // Maintenance Mode Check (NEW)
+        async function checkMaintenanceMode() {
+            const url = 'https://pastebin.com/raw/xpxvHe1N';
+            const maintenanceOverlay = document.getElementById('maintenanceOverlay');
 
-        dropdownBtn.addEventListener('click', function() {
-            dropdown.classList.toggle('active');
-        });
+            try {
+                const response = await fetch(url);
+                const status = await response.text();
+                
+                if (status.trim().toLowerCase() === 'true') {
+                    document.body.style.overflow = 'hidden';
+                    maintenanceOverlay.classList.add('active');
+                    
+                    // Hide other page elements
+                    document.querySelector('.loading')?.style.display = 'none';
+                    document.querySelector('.navbar')?.style.display = 'none';
+                    document.querySelector('.dark-overlay')?.style.display = 'none';
+                    document.querySelectorAll('.pumpkin').forEach(el => el.style.display = 'none');
+                    document.querySelector('.particles')?.style.display = 'none';
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!dropdown.contains(event.target)) {
-                dropdown.classList.remove('active');
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to fetch maintenance status, assuming site is operational.', error);
             }
-        });
-
-        // Prevent dropdown items from closing dropdown when clicking disabled items
-        document.querySelectorAll('.dropdown-item.disabled').forEach(item => {
-            item.addEventListener('click', function(e) {
-                e.preventDefault();
-            });
-        });
-
-        // Hide loading screen with fade animation
-        window.addEventListener('load', function() {
-            const loading = document.querySelector('.loading');
-            loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
             
-            setTimeout(function() {
-                loading.style.display = 'none';
-            }, 1500);
+            maintenanceOverlay.style.display = 'none';
+            return false;
+        }
+
+        // Run the check immediately and conditionally execute the rest of the page setup
+        checkMaintenanceMode().then(isMaintenance => {
+            if (isMaintenance) {
+                return;
+            }
+
+            // --- ORIGINAL PAGE LOGIC STARTS HERE ---
+            
+            // Dropdown toggle functionality
+            const dropdownBtn = document.getElementById('downloadBtn');
+            const dropdown = document.querySelector('.dropdown');
+
+            dropdownBtn.addEventListener('click', function() {
+                dropdown.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+
+            // Prevent dropdown items from closing dropdown when clicking disabled items
+            document.querySelectorAll('.dropdown-item.disabled').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                });
+            });
+
+            // Hide loading screen with fade animation
+            window.addEventListener('load', function() {
+                const loading = document.querySelector('.loading');
+                if (loading) {
+                    loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+                    
+                    setTimeout(function() {
+                        loading.style.display = 'none';
+                    }, 1500);
+                }
+            });
+
         });
     </script>
 </body>
 
 </html>
-
