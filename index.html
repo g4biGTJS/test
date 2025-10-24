@@ -57,6 +57,68 @@
         <div class="notification-title">All Systems Operational</div>
         <div class="notification-text">Everything running smoothly!</div>
     </div>
+
+    <script>
+        // Hide loading screen with fade animation
+        window.addEventListener('load', function() {
+            const loading = document.querySelector('.loading');
+            loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+            
+            setTimeout(function() {
+                loading.style.display = 'none';
+            }, 1500);
+        });
+
+        // Maintenance Mode Check
+        (function() {
+            const MAINTENANCE_URL = 'https://pastebin.com/raw/xpxvHe1N';
+            const CHECK_INTERVAL = 30000;
+
+            const maintenanceHTML = `
+                <div id="maintenanceOverlay" style="display: none;">
+                    <div class="maintenance-container">
+                        <div class="maintenance-icon">🔧</div>
+                        <h1 class="maintenance-title">Under Maintenance</h1>
+                        <p class="maintenance-text">We're currently performing scheduled maintenance to improve your experience.</p>
+                        <p class="maintenance-subtext">Please check back later!</p>
+                        <button class="glossy-button" onclick="location.reload()">
+                            <span>Refresh Site</span>
+                        </button>
+                        <p class="maintenance-status" id="maintenanceStatus">Checking status...</p>
+                    </div>
+                </div>
+            `;
+
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.insertAdjacentHTML('beforeend', maintenanceHTML);
+                checkMaintenance();
+                setInterval(checkMaintenance, CHECK_INTERVAL);
+            });
+
+            async function checkMaintenance() {
+                try {
+                    const response = await fetch(MAINTENANCE_URL + '?t=' + Date.now());
+                    const text = await response.text();
+                    const isMaintenanceMode = text.trim().toLowerCase() === 'true';
+                    
+                    const overlay = document.getElementById('maintenanceOverlay');
+                    const statusEl = document.getElementById('maintenanceStatus');
+                    
+                    if (isMaintenanceMode) {
+                        overlay.style.display = 'flex';
+                        if (statusEl) {
+                            statusEl.textContent = 'Last checked: ' + new Date().toLocaleTimeString();
+                        }
+                    } else {
+                        overlay.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Failed to check maintenance status:', error);
+                }
+            }
+
+            window.checkMaintenanceStatus = checkMaintenance;
+        })();
+    </script>
 </body>
 </html>
-
