@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="maintenance-overlay" id="maintenanceOverlay">
+      <h1 class="maintenance-text">Site Under Maintenance</h1>
+      <p class="maintenance-subtitle">We're updating things! Please check back later.</p>
+      <a href="javascript:void(0)" onclick="location.reload()" class="maintenance-button">Refresh Site</a>
+  </div>
+  
   <div class="loading">
     <div class="spinner"></div>
   </div>
@@ -74,152 +80,199 @@
   </div>
 
   <script>
-    const FLASH_DURATION_MS = 3600000; // 1 hour
+    // Maintenance Mode Check (NEW)
+    async function checkMaintenanceMode() {
+        const url = 'https://pastebin.com/raw/xpxvHe1N';
+        const maintenanceOverlay = document.getElementById('maintenanceOverlay');
 
-    const PLATFORM_CONFIG = {
-      windows: {
-        versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
-        offsetsPath: 'offsets/windows-offsets.txt',
-        updateTrackerPath: 'offsets/last-update.json',
-        title: 'Windows Offsets'
-      },
-      mac: {
-        versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer',
-        offsetsPath: 'offsets/mac-offsets.txt',
-        updateTrackerPath: 'offsets/last-update-mac.json',
-        title: 'Mac Offsets'
-      }
-    };
-
-    let currentPlatform = 'windows';
-
-    function setStatus(status, version, box, statusEl, textEl) {
-      textEl.textContent = version;
-      box.className = `version-box ${status}`;
-      statusEl.textContent =
-        status === 'updated' ? 'Recently Updated' :
-        status === 'current' ? 'Current Version' :
-        'Error';
-    }
-
-    async function tryFetchVersion(url) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (url.includes('clientsettings')) {
-          const data = await res.json();
-          return data.clientVersionUpload || data.version || null;
-        }
-        return (await res.text()).trim();
-      } catch {
-        return null;
-      }
-    }
-
-    async function fetchRobloxVersion() {
-      const config = PLATFORM_CONFIG[currentPlatform];
-      const box = document.getElementById('versionBox');
-      const statusEl = document.getElementById('versionStatus');
-      const textEl = document.getElementById('versionText');
-      const lastChecked = document.getElementById('lastChecked');
-      lastChecked.textContent = new Date().toLocaleString();
-
-      try {
-        const currentVersion = await tryFetchVersion(config.versionApi);
-        if (!currentVersion) throw new Error('API failed');
-
-        let globalUpdateTime = 0;
-        let globalVersion = null;
         try {
-          const trackerRes = await fetch(config.updateTrackerPath + '?t=' + Date.now());
-          if (trackerRes.ok) {
-            const trackerData = await trackerRes.json();
-            globalUpdateTime = trackerData.timestamp || 0;
-            globalVersion = trackerData.version || null;
+            const response = await fetch(url);
+            const status = await response.text();
+            
+            if (status.trim().toLowerCase() === 'true') {
+                document.body.style.overflow = 'hidden';
+                maintenanceOverlay.classList.add('active');
+                
+                // Hide other page elements
+                document.querySelector('.loading')?.style.display = 'none';
+                document.querySelector('.navbar')?.style.display = 'none';
+                document.querySelector('.dark-overlay')?.style.display = 'none';
+                document.querySelectorAll('.pumpkin').forEach(el => el.style.display = 'none');
+                document.querySelector('.particles')?.style.display = 'none';
+
+                return true;
+            }
+        } catch (error) {
+            console.error('Failed to fetch maintenance status, assuming site is operational.', error);
+        }
+        
+        maintenanceOverlay.style.display = 'none';
+        return false;
+    }
+
+    // Run the check immediately and conditionally execute the rest of the page setup (NEW WRAPPER)
+    checkMaintenanceMode().then(isMaintenance => {
+        if (isMaintenance) {
+            return;
+        }
+
+        // --- ORIGINAL OFFSETS.HTML SCRIPT START ---
+        const FLASH_DURATION_MS = 3600000; // 1 hour
+
+        const PLATFORM_CONFIG = {
+          windows: {
+            versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
+            offsetsPath: 'offsets/windows-offsets.txt',
+            updateTrackerPath: 'offsets/last-update.json',
+            title: 'Windows Offsets'
+          },
+          mac: {
+            versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer',
+            offsetsPath: 'offsets/mac-offsets.txt',
+            updateTrackerPath: 'offsets/last-update-mac.json',
+            title: 'Mac Offsets'
           }
-        } catch (e) {
-          console.warn('Could not fetch global update tracker:', e);
+        };
+        let currentPlatform = 'windows';
+
+        function setStatus(status, version, box, statusEl, textEl) {
+          textEl.textContent = version;
+          box.className = `version-box ${status}`;
+          statusEl.textContent = status === 'updated' ? 'Recently Updated' : status === 'current' ? 'Current Version' : 'Error';
         }
 
-        let status = 'current';
-        const elapsed = Date.now() - globalUpdateTime;
+        async function tryFetchVersion(url) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        if (elapsed < FLASH_DURATION_MS && globalUpdateTime > 0) {
-          status = 'updated';
-        }
+            if (url.includes('clientsettings')) {
+              const data = await res.json();
+              return data.clientVersionUpload || data.version || null;
+            }
 
-        setStatus(status, currentVersion, box, statusEl, textEl);
-
-        if (status === 'updated') {
-          const remainingTime = FLASH_DURATION_MS - elapsed;
-          if (remainingTime > 0) {
-            setTimeout(() => setStatus('current', currentVersion, box, statusEl, textEl), remainingTime);
+            return (await res.text()).trim();
+          } catch {
+            return null;
           }
         }
-      } catch (e) {
-        setStatus('error', 'Failed to load', box, statusEl, textEl);
-      }
-    }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
+        async function fetchRobloxVersion() {
+          const config = PLATFORM_CONFIG[currentPlatform];
+          const box = document.getElementById('versionBox');
+          const statusEl = document.getElementById('versionStatus');
+          const textEl = document.getElementById('versionText');
+          const lastCheckedEl = document.getElementById('lastChecked');
+          
+          setStatus('loading', 'Checking...', box, statusEl, textEl);
+          lastCheckedEl.textContent = 'Just Now';
 
-    function highlightCppSyntax(text) {
-      let res = escapeHtml(text);
-      res = res.replace(/\b(0x[0-9A-Fa-f]+)\b/g, '<span class="syntax-hex">$1</span>');
-      res = res.replace(/\b(namespace|inline|constexpr)\b/g, '<span class="syntax-keyword">$1</span>');
-      res = res.replace(/\b(uintptr_t)\b/g, '<span class="syntax-type">$1</span>');
-      res = res.replace(/\b([A-Z][a-zA-Z0-9_]*)\b(\s*=)/g, '<span class="syntax-identifier">$1</span>$2>');
-      res = res.replace(/([{}])/g, '<span class="syntax-brace">$1</span>');
-      return res;
-    }
+          const currentVersion = await tryFetchVersion(config.versionApi);
 
-    async function loadOffsets() {
-      const config = PLATFORM_CONFIG[currentPlatform];
-      try {
-        const res = await fetch(config.offsetsPath + '?t=' + Date.now());
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const txt = await res.text();
-        if (!txt.trim()) throw new Error('Empty file');
-        document.getElementById('offsetsContent').innerHTML = highlightCppSyntax(txt);
-      } catch (e) {
-        document.getElementById('offsetsContent').innerHTML =
-          `<span style="color:#ff6b6b;">Error loading offsets: ${e.message}<br>File missing: ${config.offsetsPath}</span>`;
-      }
-    }
+          if (!currentVersion) {
+            setStatus('error', 'Failed to fetch version', box, statusEl, textEl);
+            return;
+          }
 
-    function switchPlatform(platform) {
-      currentPlatform = platform;
-      const config = PLATFORM_CONFIG[platform];
+          let lastUpdatedVersion = null;
+          let updateTrackerDate = null;
 
-      document.querySelectorAll('.platform-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.platform === platform);
-      });
+          try {
+            const updateRes = await fetch(config.updateTrackerPath);
+            if (updateRes.ok) {
+              const updateData = await updateRes.json();
+              lastUpdatedVersion = updateData.version;
+              updateTrackerDate = new Date(updateData.date);
+            }
+          } catch {
+            // Ignore fetch error, assume no update tracker exists
+          }
 
-      document.getElementById('offsetsTitle').textContent = config.title;
+          const now = new Date();
+          const isRecentlyUpdated = updateTrackerDate && (now.getTime() - updateTrackerDate.getTime() < FLASH_DURATION_MS);
 
-      loadOffsets();
-      fetchRobloxVersion();
-    }
+          if (currentVersion === lastUpdatedVersion && !isRecentlyUpdated) {
+            setStatus('current', currentVersion, box, statusEl, textEl);
+          } else if (currentVersion === lastUpdatedVersion && isRecentlyUpdated) {
+            setStatus('updated', currentVersion, box, statusEl, textEl);
+          } else {
+            setStatus('error', 'Offsets may be outdated or missing!', box, statusEl, textEl);
+          }
+        }
 
-    window.addEventListener('load', () => {
-      const loading = document.querySelector('.loading');
-      loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
-      setTimeout(() => (loading.style.display = 'none'), 1500);
-    });
+        function highlightCppSyntax(code) {
+          const keywords = ['#define', 'struct', 'class', 'enum', 'int', 'float', 'double', 'long', 'short', 'char', 'bool', 'void', 'const', 'typedef', 'using', 'namespace', 'if', 'else', 'for', 'while', 'return', 'break', 'continue', 'public', 'private', 'protected', 'static', 'virtual', 'override', 'new', 'delete'];
+          const types = ['DWORD', 'UINT', 'INT64', 'UCHAR', 'PCHAR'];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.platform-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchPlatform(btn.dataset.platform));
-      });
+          let html = code
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
 
-      loadOffsets();
-      fetchRobloxVersion();
-      setInterval(fetchRobloxVersion, 60000);
-      setInterval(loadOffsets, 300000);
+          // Highlight HEX values (0x...)
+          html = html.replace(/(0x[0-9A-Fa-f]+)/g, '<span class="syntax-hex">$1</span>');
+
+          // Highlight Keywords and Types
+          const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+          html = html.replace(regex, '<span class="syntax-keyword">$1</span>');
+          
+          const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
+          html = html.replace(typeRegex, '<span class="syntax-type">$1</span>');
+
+          // Highlight identifiers that look like variables or fields (anything followed by a space, =, or ;)
+          html = html.replace(/([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*(=|;))/g, '<span class="syntax-identifier">$1</span>');
+
+          // Highlight braces and operators
+          html = html.replace(/(\{|\}|\[|\])/g, '<span class="syntax-brace">$1</span>');
+
+          return html;
+        }
+
+        async function loadOffsets() {
+          const config = PLATFORM_CONFIG[currentPlatform];
+
+          try {
+            document.getElementById('offsetsContent').innerHTML = 'Loading offsets...';
+            const res = await fetch(config.offsetsPath);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const txt = await res.text();
+            if (!txt.trim()) throw new Error('Empty file');
+            document.getElementById('offsetsContent').innerHTML = highlightCppSyntax(txt);
+          } catch (e) {
+            document.getElementById('offsetsContent').innerHTML =
+              `<span style="color:#ff6b6b;">Error loading offsets: ${e.message}<br>File missing: ${config.offsetsPath}</span>`;
+          }
+        }
+
+        function switchPlatform(platform) {
+          currentPlatform = platform;
+          const config = PLATFORM_CONFIG[platform];
+
+          document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.platform === platform);
+          });
+
+          document.getElementById('offsetsTitle').textContent = config.title;
+
+          loadOffsets();
+          fetchRobloxVersion();
+        }
+
+        window.addEventListener('load', () => {
+          const loading = document.querySelector('.loading');
+          loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+          setTimeout(() => (loading.style.display = 'none'), 1500);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+          document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchPlatform(btn.dataset.platform));
+          });
+
+          loadOffsets();
+          fetchRobloxVersion();
+          setInterval(fetchRobloxVersion, 60000); // Check for new version every minute
+        });
+        // --- ORIGINAL OFFSETS.HTML SCRIPT END ---
     });
   </script>
 </body>
