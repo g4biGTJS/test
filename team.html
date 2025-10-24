@@ -1,85 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team - Glacier</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offsets - Glacier</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div class="loading">
-        <div class="spinner"></div>
-    </div>
+  <div class="maintenance-overlay" id="maintenanceOverlay">
+      <h1 class="maintenance-text">Site Under Maintenance</h1>
+      <p class="maintenance-subtitle">We're updating things! Please check back later.</p>
+      <a href="javascript:void(0)" onclick="location.reload()" class="maintenance-button">Refresh Site</a>
+  </div>
+  
+  <div class="loading">
+    <div class="spinner"></div>
+  </div>
 
-    <!-- Navigation Tabs -->
-    <nav class="navbar">
-        <div class="nav-logo">
-            <span>Glacier</span>
+  <nav class="navbar">
+    <div class="nav-logo"><span>Glacier</span></div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="download.html" class="nav-link">Download</a>
+      <a href="offsets.html" class="nav-link active">Offsets</a>
+      <a href="team.html" class="nav-link">Team</a>
+    </div>
+  </nav>
+
+  <div class="dark-overlay"></div>
+  <div class="pumpkin">🎃</div>
+  <div class="pumpkin">🎃</div>
+  <div class="pumpkin">🎃</div>
+
+  <div class="particles">
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    <div class="particle"></div><div class="particle"></div>
+  </div>
+
+  <div class="page active">
+    <div class="container offsets-container">
+      <p>
+    </p>
+            <p>
+    </p>
+            <p>
+    </p>
+      <h1 class="title">Offsets</h1>
+      <p class="subtitle">Current Roblox offsets and version information</p>
+
+      <div class="main-content">
+        <div class="platform-selector">
+          <button class="platform-btn active" data-platform="windows">Windows</button>
+          <button class="platform-btn" data-platform="mac">Mac</button>
         </div>
-        <div class="nav-links">
-            <a href="index.html" class="nav-link">Home</a>
-            <a href="download.html" class="nav-link">Download</a>
-            <a href="offsets.html" class="nav-link">Offsets</a>
-            <a href="team.html" class="nav-link active">Team</a>
+
+        <div class="version-display">
+          <h2 class="changelog-title">Current Roblox Version</h2>
+          <div class="version-box" id="versionBox">
+            <div class="version-status" id="versionStatus">Loading...</div>
+            <div class="version-text" id="versionText">...</div>
+          </div>
+          <p class="last-checked">Last checked: <span id="lastChecked">Never</span></p>
         </div>
-    </nav>
 
-    <div class="dark-overlay"></div>
-    
-    <div class="pumpkin">🎃</div>
-    <div class="pumpkin">🎃</div>
-    <div class="pumpkin">🎃</div>
-
-    <div class="particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
-
-    <div class="page active">
-        <div class="container">
-            <h1 class="title">Our Team</h1>
-            <p class="subtitle">The talented individuals behind Glacier</p>
-
-            <div class="team-grid">
-                <div class="team-card owner-card">
-                    <div class="team-role-badge owner-badge">Owner</div>
-                    <div class="team-name">kakav420fire</div>
-                </div>
-                
-                <div class="team-card co-owner-card">
-                    <div class="team-role-badge co-owner-badge">Co-Owner</div>
-                    <div class="team-name">yuxxgrahh</div>
-                </div>
-                
-                <div class="team-card admin-card">
-                    <div class="team-role-badge admin-badge">Admin & Friend</div>
-                    <div class="team-name">cash7057</div>
-                </div>
-            </div>
+        <div class="offsets-section">
+          <h2 class="changelog-title" id="offsetsTitle">Windows Offsets</h2>
+          <div class="offsets-box" id="offsetsBox">
+            <pre id="offsetsContent">Loading offsets...</pre>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <div class="notification">
-        <div class="notification-title">All Systems Operational</div>
-        <div class="notification-text">Everything running smoothly!</div>
-    </div>
+  <div class="notification">
+    <div class="notification-title">All Systems Operational</div>
+    <div class="notification-text">Everything running smoothly!</div>
+  </div>
 
-    <script>
-        // Hide loading screen with fade animation
-        window.addEventListener('load', function() {
-            const loading = document.querySelector('.loading');
-            loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+  <script>
+    // Maintenance Mode Check (NEW)
+    async function checkMaintenanceMode() {
+        const url = 'https://pastebin.com/raw/xpxvHe1N';
+        const maintenanceOverlay = document.getElementById('maintenanceOverlay');
+
+        try {
+            const response = await fetch(url);
+            const status = await response.text();
             
-            setTimeout(function() {
-                loading.style.display = 'none';
-            }, 1500);
+            if (status.trim().toLowerCase() === 'true') {
+                document.body.style.overflow = 'hidden';
+                maintenanceOverlay.classList.add('active');
+                
+                // Hide other page elements
+                document.querySelector('.loading')?.style.display = 'none';
+                document.querySelector('.navbar')?.style.display = 'none';
+                document.querySelector('.dark-overlay')?.style.display = 'none';
+                document.querySelectorAll('.pumpkin').forEach(el => el.style.display = 'none');
+                document.querySelector('.particles')?.style.display = 'none';
+
+                return true;
+            }
+        } catch (error) {
+            console.error('Failed to fetch maintenance status, assuming site is operational.', error);
+        }
+        
+        maintenanceOverlay.style.display = 'none';
+        return false;
+    }
+
+    // Run the check immediately and conditionally execute the rest of the page setup (NEW WRAPPER)
+    checkMaintenanceMode().then(isMaintenance => {
+        if (isMaintenance) {
+            return;
+        }
+
+        // --- ORIGINAL OFFSETS.HTML SCRIPT START ---
+        const FLASH_DURATION_MS = 3600000; // 1 hour
+
+        const PLATFORM_CONFIG = {
+          windows: {
+            versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer',
+            offsetsPath: 'offsets/windows-offsets.txt',
+            updateTrackerPath: 'offsets/last-update.json',
+            title: 'Windows Offsets'
+          },
+          mac: {
+            versionApi: 'https://api.allorigins.win/raw?url=https://clientsettingscdn.roblox.com/v2/client-version/MacPlayer',
+            offsetsPath: 'offsets/mac-offsets.txt',
+            updateTrackerPath: 'offsets/last-update-mac.json',
+            title: 'Mac Offsets'
+          }
+        };
+        let currentPlatform = 'windows';
+
+        function setStatus(status, version, box, statusEl, textEl) {
+          textEl.textContent = version;
+          box.className = `version-box ${status}`;
+          statusEl.textContent = status === 'updated' ? 'Recently Updated' : status === 'current' ? 'Current Version' : 'Error';
+        }
+
+        async function tryFetchVersion(url) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            if (url.includes('clientsettings')) {
+              const data = await res.json();
+              return data.clientVersionUpload || data.version || null;
+            }
+
+            return (await res.text()).trim();
+          } catch {
+            return null;
+          }
+        }
+
+        async function fetchRobloxVersion() {
+          const config = PLATFORM_CONFIG[currentPlatform];
+          const box = document.getElementById('versionBox');
+          const statusEl = document.getElementById('versionStatus');
+          const textEl = document.getElementById('versionText');
+          const lastCheckedEl = document.getElementById('lastChecked');
+          
+          setStatus('loading', 'Checking...', box, statusEl, textEl);
+          lastCheckedEl.textContent = 'Just Now';
+
+          const currentVersion = await tryFetchVersion(config.versionApi);
+
+          if (!currentVersion) {
+            setStatus('error', 'Failed to fetch version', box, statusEl, textEl);
+            return;
+          }
+
+          let lastUpdatedVersion = null;
+          let updateTrackerDate = null;
+
+          try {
+            const updateRes = await fetch(config.updateTrackerPath);
+            if (updateRes.ok) {
+              const updateData = await updateRes.json();
+              lastUpdatedVersion = updateData.version;
+              updateTrackerDate = new Date(updateData.date);
+            }
+          } catch {
+            // Ignore fetch error, assume no update tracker exists
+          }
+
+          const now = new Date();
+          const isRecentlyUpdated = updateTrackerDate && (now.getTime() - updateTrackerDate.getTime() < FLASH_DURATION_MS);
+
+          if (currentVersion === lastUpdatedVersion && !isRecentlyUpdated) {
+            setStatus('current', currentVersion, box, statusEl, textEl);
+          } else if (currentVersion === lastUpdatedVersion && isRecentlyUpdated) {
+            setStatus('updated', currentVersion, box, statusEl, textEl);
+          } else {
+            setStatus('error', 'Offsets may be outdated or missing!', box, statusEl, textEl);
+          }
+        }
+
+        function highlightCppSyntax(code) {
+          const keywords = ['#define', 'struct', 'class', 'enum', 'int', 'float', 'double', 'long', 'short', 'char', 'bool', 'void', 'const', 'typedef', 'using', 'namespace', 'if', 'else', 'for', 'while', 'return', 'break', 'continue', 'public', 'private', 'protected', 'static', 'virtual', 'override', 'new', 'delete'];
+          const types = ['DWORD', 'UINT', 'INT64', 'UCHAR', 'PCHAR'];
+
+          let html = code
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          // Highlight HEX values (0x...)
+          html = html.replace(/(0x[0-9A-Fa-f]+)/g, '<span class="syntax-hex">$1</span>');
+
+          // Highlight Keywords and Types
+          const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+          html = html.replace(regex, '<span class="syntax-keyword">$1</span>');
+          
+          const typeRegex = new RegExp(`\\b(${types.join('|')})\\b`, 'g');
+          html = html.replace(typeRegex, '<span class="syntax-type">$1</span>');
+
+          // Highlight identifiers that look like variables or fields (anything followed by a space, =, or ;)
+          html = html.replace(/([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*(=|;))/g, '<span class="syntax-identifier">$1</span>');
+
+          // Highlight braces and operators
+          html = html.replace(/(\{|\}|\[|\])/g, '<span class="syntax-brace">$1</span>');
+
+          return html;
+        }
+
+        async function loadOffsets() {
+          const config = PLATFORM_CONFIG[currentPlatform];
+
+          try {
+            document.getElementById('offsetsContent').innerHTML = 'Loading offsets...';
+            const res = await fetch(config.offsetsPath);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const txt = await res.text();
+            if (!txt.trim()) throw new Error('Empty file');
+            document.getElementById('offsetsContent').innerHTML = highlightCppSyntax(txt);
+          } catch (e) {
+            document.getElementById('offsetsContent').innerHTML =
+              `<span style="color:#ff6b6b;">Error loading offsets: ${e.message}<br>File missing: ${config.offsetsPath}</span>`;
+          }
+        }
+
+        function switchPlatform(platform) {
+          currentPlatform = platform;
+          const config = PLATFORM_CONFIG[platform];
+
+          document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.platform === platform);
+          });
+
+          document.getElementById('offsetsTitle').textContent = config.title;
+
+          loadOffsets();
+          fetchRobloxVersion();
+        }
+
+        window.addEventListener('load', () => {
+          const loading = document.querySelector('.loading');
+          loading.style.animation = 'fadeOut 1s ease 0.5s forwards';
+          setTimeout(() => (loading.style.display = 'none'), 1500);
         });
-    </script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+          document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchPlatform(btn.dataset.platform));
+          });
+
+          loadOffsets();
+          fetchRobloxVersion();
+          setInterval(fetchRobloxVersion, 60000); // Check for new version every minute
+        });
+        // --- ORIGINAL OFFSETS.HTML SCRIPT END ---
+    });
+  </script>
 </body>
 </html>
